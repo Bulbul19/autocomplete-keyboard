@@ -1,0 +1,94 @@
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #e3f2fd, #ffffff);
+}
+
+/* Container */
+.container {
+    text-align: center;
+    padding: 30px;
+}
+
+/* Title */
+h2 {
+    margin-bottom: 20px;
+}
+
+/* Text box */
+textarea {
+    width: 70%;
+    height: 90px;
+    font-size: 18px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    outline: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Suggestions */
+.suggestions {
+    margin: 20px 0;
+}
+
+.suggestion {
+    display: inline-block;
+    background: #2196f3;
+    color: white;
+    padding: 10px 16px;
+    margin: 6px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.suggestion:hover {
+    background: #1565c0;
+    transform: scale(1.05);
+}
+
+/* Keyboard */
+.keyboard {
+    max-width: 650px;
+    margin: auto;
+}
+
+/* Rows */
+.keyboard-row {
+    margin: 5px 0;
+}
+
+/* Keys */
+.key {
+    display: inline-block;
+    width: 45px;
+    padding: 12px;
+    margin: 4px;
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: 0.15s;
+}
+
+.key:hover {
+    background: #f0f0f0;
+}
+
+.key:active {
+    transform: scale(0.95);
+}
+
+/* Special keys */
+.key.space {
+    width: 150px;
+    background: #eeeeee;
+}
+
+.key.backspace {
+    width: 80px;
+    background: #ffcccc;
+}

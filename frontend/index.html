@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Autocomplete Keyboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0e0e12;
+            --surface: #16161e;
+            --surface2: #1e1e28;
+            --surface3: #252532;
+            --border: rgba(255,255,255,0.08);
+            --border-hover: rgba(255,255,255,0.15);
+            --accent: #7c6af7;
+            --accent2: #5eead4;
+            --accent3: #f472b6;
+            --text: #e8e8f0;
+            --text-muted: #7a7a8e;
+            --text-dim: #4a4a5a;
+            --key-bg: #1e1e2a;
+            --key-hover: #28283a;
+            --key-active: #333348;
+            --key-special: #151520;
+            --shadow: 0 4px 20px rgba(0,0,0,0.4);
+            --glow: 0 0 20px rgba(124,106,247,0.2);
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 12px 40px;
+            background-image: radial-gradient(ellipse at 20% 0%, rgba(124,106,247,0.08) 0%, transparent 60%),
+                              radial-gradient(ellipse at 80% 100%, rgba(94,234,212,0.05) 0%, transparent 60%);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 760px;
+        }
+        .header-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .header h1 {
+            font-size: 18px; font-weight: 600;
+            background: linear-gradient(90deg, #e8e8f0, #7c6af7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-badge {
+            margin-left: auto;
+            font-size: 11px; font-weight: 500;
+            padding: 3px 10px;
+            background: rgba(124,106,247,0.15);
+            border: 1px solid rgba(124,106,247,0.3);
+            border-radius: 20px;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+
+        /* Main wrapper */
+        .main {
+            width: 100%; max-width: 760px;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+
+        /* Text display */
+        .text-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+        .text-panel:focus-within { border-color: rgba(124,106,247,0.4); box-shadow: var(--glow); }
+        .text-label {
+            font-size: 11px; font-weight: 500; color: var(--text-muted);
+            letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .text-label::before {
+            content: ''; display: inline-block;
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent2);
+        }
+        #textDisplay {
+            width: 100%; min-height: 64px;
+            background: transparent; border: none; outline: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 20px; font-weight: 400; color: var(--text);
+            resize: none; line-height: 1.5;
+            caret-color: var(--accent);
+        }
+        #textDisplay::placeholder { color: var(--text-dim); }
+        .char-count {
+            position: absolute; bottom: 12px; right: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; color: var(--text-dim);
+        }
+
+        /* Suggestions */
+        .suggestions-panel {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            min-height: 44px;
+        }
+        .suggestions-label {
+            font-size: 11px; color: var(--text-dim);
+            font-weight: 500; letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .suggestions-track {
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .suggestion {
+            padding: 7px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 14px; font-weight: 500; color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative; overflow: hidden;
+            white-space: nowrap;
+        }
+        .suggestion::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, rgba(124,106,247,0.15), rgba(94,234,212,0.1));
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .suggestion:hover { border-color: rgba(124,106,247,0.5); transform: translateY(-1px); }
+        .suggestion:hover::before { opacity: 1; }
+        .suggestion:active { transform: scale(0.96); }
+
+        .suggestion-loading {
+            font-size: 13px; color: var(--text-dim);
+            font-style: italic; padding: 7px 0;
+        }
+
+        /* Mic button */
+        .mic-btn {
+            margin-left: auto;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; transition: all 0.15s;
+            position: relative;
+        }
+        .mic-btn:hover { border-color: var(--accent3); background: rgba(244,114,182,0.1); }
+        .mic-btn.recording {
+            border-color: var(--accent3);
+            background: rgba(244,114,182,0.15);
+            animation: mic-pulse 1s ease-in-out infinite;
+        }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244,114,182,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(244,114,182,0); }
+        }
+
+        /* Keyboard */
+        .keyboard-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        /* Rows */
+        .keyboard-row {
+            display: flex; justify-content: center;
+            gap: 5px; margin-bottom: 5px;
+        }
+        .keyboard-row:last-child { margin-bottom: 0; }
+
+        /* Keys */
+        .key {
+            min-width: 44px; height: 44px;
+            background: var(--key-bg);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-bottom: 2px solid rgba(0,0,0,0.4);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px; font-weight: 500; color: var(--text);
+            transition: all 0.07s;
+            user-select: none;
+            position: relative;
+            letter-spacing: 0;
+        }
+        .key:hover { background: var(--key-hover); border-color: rgba(255,255,255,0.12); }
+        .key:active, .key.pressed {
+            background: var(--key-active);
+            transform: translateY(1px);
+            border-bottom-width: 1px;
+        }
+
+        /* Special keys */
+        .key.wide { min-width: 60px; font-size: 12px; color: var(--text-muted); }
+        .key.space { flex: 1; max-width: 260px; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+        .key.back  { min-width: 70px; }
+        .key.enter { min-width: 90px; background: rgba(124,106,247,0.12); border-color: rgba(124,106,247,0.2); color: var(--accent); font-size: 12px; }
+        .key.enter:hover { background: rgba(124,106,247,0.2); }
+        .key.shift { min-width: 72px; }
+        .key.num   { background: var(--key-special); font-size: 11px; min-width: 50px; }
+        .key.symbol{ background: var(--key-special); font-size: 13px; }
+
+        /* Numbers row small */
+        .key.digit { height: 36px; font-size: 13px; min-width: 38px; }
+
+        /* Mode toggle */
+        .mode-bar {
+            display: flex; gap: 6px; margin-bottom: 10px;
+        }
+        .mode-btn {
+            padding: 5px 14px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px; font-weight: 500; color: var(--text-muted);
+            cursor: pointer; transition: all 0.15s;
+        }
+        .mode-btn.active {
+            background: rgba(124,106,247,0.15);
+            border-color: rgba(124,106,247,0.4);
+            color: var(--accent);
+        }
+
+        /* AI status bar */
+        .ai-bar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px; color: var(--text-muted);
+        }
+        .ai-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--accent2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .ai-bar span.status { font-weight: 500; color: var(--text); }
+        .ai-bar .model-tag {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; padding: 2px 8px;
+            background: rgba(124,106,247,0.1);
+            border-radius: 4px; color: var(--accent);
+        }
+
+        /* Caps indicator */
+        .caps-indicator {
+            position: absolute; top: -6px; right: -4px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent2);
+            display: none;
+        }
+        .caps-on .caps-indicator { display: block; }
+
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-icon">⌨</div>
+    <h1>AI Keyboard</h1>
+    <div class="header-badge">✦ AI Enhanced</div>
+</div>
+
+<div class="main">
+
+    <!-- AI Status -->
+    <div class="ai-bar">
+        <div class="ai-dot"></div>
+        <span class="status" id="aiStatus">Ready</span>
+        <span style="margin-left:4px; font-size:12px" id="aiDetail">— type to get smart suggestions</span>
+        <span class="model-tag" id="modelTag">trie + bigram</span>
+    </div>
+
+    <!-- Text display -->
+    <div class="text-panel">
+        <div class="text-label">Current Text</div>
+        <textarea id="textDisplay" placeholder="Start typing with the keyboard below…" readonly></textarea>
+        <span class="char-count" id="charCount">0</span>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="suggestions-panel">
+        <span class="suggestions-label">Suggestions</span>
+        <div class="suggestions-track" id="suggestions">
+            <span class="suggestion-loading">waiting for input…</span>
+        </div>
+        <button class="mic-btn" id="micBtn" title="Voice input">🎤</button>
+    </div>
+
+    <!-- Keyboard -->
+    <div class="keyboard-panel">
+        <!-- Mode bar -->
+        <div class="mode-bar">
+            <button class="mode-btn active" id="modeAlpha" onclick="setMode('alpha')">ABC</button>
+            <button class="mode-btn" id="modeNum" onclick="setMode('num')">123</button>
+            <button class="mode-btn" id="modeSym" onclick="setMode('sym')">!@#</button>
+            <button class="mode-btn" id="modeHindi" onclick="setMode('hindi')" style="margin-left:auto; border-color:rgba(250,180,80,0.4); color:#fab450;">अ Hindi</button>
+        </div>
+
+        <div id="keyboard"></div>
+    </div>
+
+</div>
+
+<script>
+const backendURL = "http://127.0.0.1:8000";
+let currentText = "";
+let capsOn = false;
+let currentMode = 'alpha';
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
+// ─── LAYOUTS ───────────────────────────────────────────
+const ALPHA_LAYOUT = [
+    { row: ['1','2','3','4','5','6','7','8','9','0'], cls: 'digit' },
+    { row: ['q','w','e','r','t','y','u','i','o','p'], cls: '' },
+    { row: ['CAPS','a','s','d','f','g','h','j','k','l'], cls: '' },
+    { row: ['z','x','c','v','b','n','m',',','.','⌫'], cls: '' },
+    { row: ['space'], cls: '' }
+];
+
+const NUM_LAYOUT = [
+    { row: ['1','2','3'], cls: '' },
+    { row: ['4','5','6'], cls: '' },
+    { row: ['7','8','9'], cls: '' },
+    { row: ['.','0','⌫'], cls: '' },
+    { row: ['space'], cls: '' }
+];
+
+const SYM_LAYOUT = [
+    { row: ['!','@','#','$','%','^','&','*','(',')','-','+'], cls: 'symbol' },
+    { row: ['=','[',']','{','}','|',';',':','/','\\','~','`'], cls: 'symbol' },
+    { row: ['<','>','?','"',"'",'_','…','—','·','•','©','®'], cls: 'symbol' },
+    { row: ['space'], cls: '' }
+];
+
+const HINDI_LAYOUT = [
+    { row: ['अ','आ','इ','ई','उ','ऊ','ए','ऐ','ओ','औ'], cls: 'hindi' },
+    { row: ['क','ख','ग','घ','च','छ','ज','झ','ट','ठ'], cls: 'hindi' },
+    { row: ['ड','ढ','त','थ','द','ध','न','प','फ','ब'], cls: 'hindi' },
+    { row: ['भ','म','य','र','ल','व','श','ष','स','ह','⌫'], cls: 'hindi' },
+    { row: ['़','ा','ि','ी','ु','ू','े','ै','ो','ौ','्'], cls: 'hindi-matra' },
+    { row: ['space'], cls: '' }
+];
+function buildKeyboard() {
+    const kb = document.getElementById('keyboard');
+    kb.innerHTML = '';
+    const layout = currentMode === 'alpha' ? ALPHA_LAYOUT :
+                   currentMode === 'num'   ? NUM_LAYOUT   :
+                   currentMode === 'sym'   ? SYM_LAYOUT   : HINDI_LAYOUT;
+
+    layout.forEach(({ row, cls }) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'keyboard-row';
+
+        row.forEach(k => {
+            const btn = document.createElement('div');
+            btn.className = 'key';
+
+            const label = getKeyLabel(k);
+            btn.textContent = label;
+
+            if (k === 'space')    { btn.classList.add('space'); btn.textContent = currentMode === 'hindi' ? 'स्पेस' : 'SPACE'; }
+            else if (k === '⌫')   { btn.classList.add('back', 'wide'); btn.textContent = '⌫'; }
+            else if (k === 'CAPS'){ btn.classList.add('wide'); btn.style.position='relative'; btn.innerHTML = label + '<span class="caps-indicator"></span>'; if(capsOn) btn.classList.add('caps-on'); }
+            else if (k === '↵')   { btn.classList.add('enter'); }
+            else if (cls === 'digit') { btn.classList.add('digit'); }
+            else if (cls === 'symbol') { btn.classList.add('symbol'); }
+            else if (cls === 'hindi') { btn.style.fontFamily = "'Noto Sans Devanagari', sans-serif"; btn.style.fontSize = '17px'; }
+            else if (cls === 'hindi-matra') { btn.style.fontFamily = "'Noto Sans Devanagari', sans-serif"; btn.style.fontSize = '15px'; btn.style.color = 'var(--accent2)'; }
+
+            btn.addEventListener('click', () => handleKey(k));
+
+            rowDiv.appendChild(btn);
+        });
+
+        kb.appendChild(rowDiv);
+    });
+}
+
+function getKeyLabel(k) {
+    if (k === 'space') return 'SPACE';
+    if (k === '⌫') return '⌫';
+    if (k === 'CAPS') return 'CAPS';
+    if (k === '↵') return '↵ Enter';
+    if (currentMode === 'alpha' && capsOn) return k.toUpperCase();
+    return k;
+}
+
+
+// ─── HANDLE KEY ──────────────────────────────────────────
+function handleKey(key) {
+    if (key === '⌫') {
+        currentText = currentText.slice(0, -1);
+        updateTextArea();
+        updateSuggestions({ updated_text: currentText, suggestions: [] });
+        return;
+    }
+    if (key === 'CAPS') {
+        capsOn = !capsOn;
+        buildKeyboard(); return;
+    }
+    if (key === 'space') { sendInput(' '); return; }
+
+    let char = key;
+    if (currentMode === 'alpha' && capsOn) char = key.toUpperCase();
+
+    sendInput(char);
+}
+
+// ─── MODE ────────────────────────────────────────────────
+function setMode(mode) {
+    currentMode = mode;
+    ['modeAlpha','modeNum','modeSym','modeHindi'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+    const activeId = mode === 'alpha' ? 'modeAlpha' : mode === 'num' ? 'modeNum' : mode === 'sym' ? 'modeSym' : 'modeHindi';
+    document.getElementById(activeId).classList.add('active');
+    if (mode === 'hindi') {
+        document.getElementById('modeHindi').style.background = 'rgba(250,180,80,0.15)';
+        document.getElementById('modeHindi').style.borderColor = 'rgba(250,180,80,0.5)';
+    }
+    buildKeyboard();
+}
+
+// ─── SEND INPUT ──────────────────────────────────────────
+function sendInput(char) {
+    setStatus('Fetching suggestions…', '⟳');
+    fetch(`${backendURL}/input`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: currentText, char })
+    })
+    .then(r => r.json())
+    .then(data => {
+        currentText = data.updated_text;
+        updateTextArea();
+        updateSuggestions(data);
+        setStatus('Ready', data.suggestions?.length ? '✦ AI' : 'trie');
+    })
+    .catch(() => {
+        // offline fallback
+        currentText += char;
+        updateTextArea();
+        const words = currentText.trim().split(/\s+/);
+        const last = words[words.length - 1].toLowerCase();
+        const fallback = getFallbackSuggestions(last, char);
+        updateSuggestions({ updated_text: currentText, suggestions: fallback });
+        setStatus('Offline mode', 'local');
+    });
+}
+
+// ─── FALLBACK (offline) ──────────────────────────────────
+const commonWords = ['the','and','for','are','but','not','you','all','can','had','her','was','one','our','out','day','get','has','him','his','how','man','new','now','old','see','two','way','who','boy','did','its','let','put','say','she','too','use','said','each','which','their','time','will','about','would','there','could','other','after','think','these','being','great','place','world','every','never','where','before','those','should','things','people','through','without','always','because','however','actually','already','another','between'];
+const nextWords = { 'the': ['world','day','best','first','last'], 'i': ['think','want','feel','love','am'], 'you': ['are','can','will','should','know'], 'is': ['the','a','very','so','not'], 'this': ['is','was','will','can','has'], 'it': ['is','was','will','can','has'] };
+
+const hindiCommonWords = ['है','और','का','के','की','में','को','से','पर','यह','वह','हम','आप','मैं','हैं','था','थी','होता','करना','जाना','आना','देखना','सुनना','बोलना','खाना','पीना','सोना','जागना','चलना','दौड़ना'];
+const hindiNextWords = { 'मैं': ['हूँ','जाता','खाता','सोता','पढ़ता'], 'आप': ['कैसे','कहाँ','क्या','हैं','जाते'], 'यह': ['है','था','अच्छा','बुरा','सही'], 'हम': ['सब','जाते','करते','हैं','थे'], 'दादी': ['का','की','के','घर','माँ'], 'घर': ['पर','में','का','की','जाना'] };
+
+function getFallbackSuggestions(prefix, char) {
+    const hasDevanagari = [...currentText].some(ch => ch >= '\u0900' && ch <= '\u097F');
+
+    if (char === ' ') {
+        const words = currentText.trim().split(/\s+/);
+        const prev = words[words.length - 2] || '';
+        if (hasDevanagari) {
+            return (hindiNextWords[prev] || ['है','और','का','की','के']).slice(0, 3);
+        }
+        return (nextWords[prev.toLowerCase()] || ['the','and','is','a','in']).slice(0, 3);
+    }
+    if (!prefix) return [];
+    if (hasDevanagari) {
+        return hindiCommonWords.filter(w => w.startsWith(prefix) && w !== prefix).slice(0, 3);
+    }
+    return commonWords.filter(w => w.startsWith(prefix) && w !== prefix).slice(0, 3);
+}
+
+// ─── SELECT WORD ─────────────────────────────────────────
+function selectWord(word) {
+    setStatus('Applying suggestion…', '↳');
+    fetch(`${backendURL}/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: currentText, word })
+    })
+    .then(r => r.json())
+    .then(data => {
+        currentText = data.updated_text;
+        updateTextArea();
+        updateSuggestions(data);
+        setStatus('Ready');
+    })
+    .catch(() => {
+        // offline fallback
+        const words = currentText.trim().split(/\s+/);
+        words[words.length - 1] = word;
+        currentText = words.join(' ') + ' ';
+        updateTextArea();
+        const next = (nextWords[word.toLowerCase()] || ['the','and','is']).slice(0,3);
+        updateSuggestions({ updated_text: currentText, suggestions: next });
+        setStatus('Offline mode', 'local');
+    });
+}
+
+// ─── UI UPDATES ──────────────────────────────────────────
+function updateTextArea() {
+    document.getElementById('textDisplay').value = currentText;
+    document.getElementById('charCount').textContent = currentText.length;
+}
+
+function updateSuggestions(data) {
+    const div = document.getElementById('suggestions');
+    div.innerHTML = '';
+    if (!data.suggestions || data.suggestions.length === 0) {
+        div.innerHTML = '<span class="suggestion-loading">no suggestions yet…</span>';
+        return;
+    }
+    data.suggestions.forEach((word, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'suggestion';
+        btn.textContent = word;
+        btn.style.animationDelay = (i * 0.06) + 's';
+        btn.onclick = () => selectWord(word);
+        div.appendChild(btn);
+    });
+}
+
+function setStatus(text, tag) {
+    document.getElementById('aiStatus').textContent = text;
+    if (tag) document.getElementById('modelTag').textContent = tag;
+}
+
+// ─── VOICE INPUT ─────────────────────────────────────────
+const micBtn = document.getElementById('micBtn');
+micBtn.addEventListener('click', toggleMic);
+
+async function toggleMic() {
+    if (!isRecording) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = sendAudio;
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            micBtn.title = 'Stop recording';
+            setStatus('Recording…', '🎤');
+        } catch (e) {
+            setStatus('Mic access denied', '✕');
+        }
+    } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        micBtn.title = 'Voice input';
+    }
+}
+
+async function sendAudio() {
+    setStatus('Transcribing…', '🔄');
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    const formData = new FormData();
+    formData.append('audio', blob, 'recording.webm');
+    try {
+        const res = await fetch(`${backendURL}/voice`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.text) {
+            currentText += (currentText.endsWith(' ') || !currentText ? '' : ' ') + data.text;
+            updateTextArea();
+            setStatus('Voice transcribed', '✦');
+        }
+    } catch {
+        setStatus('Voice not supported by server', '✕');
+    }
+}
+
+// ─── INIT ────────────────────────────────────────────────
+buildKeyboard();
+</script>
+
+</body>
+</html>
