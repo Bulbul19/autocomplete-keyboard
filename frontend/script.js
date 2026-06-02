@@ -1,6 +1,6 @@
 alert("JS IS RUNNING");
 
-const backendURL = "http://127.0.0.1:8000";
+const backendURL = "https://autocomplete-keyboard.onrender.com";
 let currentText = "";
 
 // ---------- CREATE KEYBOARD ----------
