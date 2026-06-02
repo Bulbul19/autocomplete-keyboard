@@ -122,3 +122,57 @@ function selectWord(word) {
     })
     .catch(err => console.error("Error:", err));
 }
+// ---------- AUTOMATED KEYBOARD GENERATOR ----------
+function automateTyping(targetSentence) {
+    console.log("Starting automation for:", targetSentence);
+    
+    // Reset the application state before starting
+    currentText = "";
+    updateUI({ updated_text: "", suggestions: [] });
+
+    let index = 0;
+
+    // Set an interval to run every 400 milliseconds (simulates a typing speed)
+    const typingTimer = setInterval(() => {
+        if (index < targetSentence.length) {
+            let nextChar = targetSentence[index];
+
+            // 1. Give visual feedback by lighting up the virtual key
+            flashKeyUI(nextChar);
+
+            // 2. Trigger your existing network event
+            sendInput(nextChar);
+
+            index++;
+        } else {
+            // Stop typing when we reach the end of the sentence
+            clearInterval(typingTimer);
+            console.log("Automation sequence complete.");
+        }
+    }, 400); 
+}
+
+// Helper to find the DOM element for the key and briefly highlight it
+function flashKeyUI(char) {
+    const allKeys = document.querySelectorAll(".key");
+    allKeys.forEach(keyBtn => {
+        const isSpace = (char === " " && keyBtn.innerText === "Space");
+        const isNormalKey = (keyBtn.innerText === char);
+
+        if (isNormalKey || isSpace) {
+            keyBtn.classList.add("automated-active");
+            // Remove the highlight effect after 200ms
+            setTimeout(() => keyBtn.classList.remove("automated-active"), 200);
+        }
+    });
+}
+.key {
+    transition: background-color 0.1s ease;
+}
+
+/* This class gets toggled by our JS animation function */
+.key.automated-active {
+    background-color: #4CAF50 !important; /* Vivid green highlight */
+    color: white;
+    transform: scale(0.95); /* Simulates a mechanical press down */
+}

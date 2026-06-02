@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import tempfile, os
 
 print("🚀 AI Autocomplete Keyboard — Server Starting")
-
+IS_PRODUCTION = os.getenv("RENDER", "false") == "true"
 app = FastAPI(title="AI Keyboard API", version="2.0")
 
 app.add_middleware(
@@ -45,28 +45,30 @@ def select(req: SelectRequest):
 @app.post("/voice")
 async def voice(audio: UploadFile = File(...)):
     """
-    Transcribes audio using OpenAI Whisper (if available).
-    Requires: pip install openai-whisper OR use the Whisper API.
+    Transcribes audio using OpenAI Whisper (Disabled in Production due to RAM limits).
     """
+    # 🚀 FOR PRODUCTION: Cut it off immediately to save RAM
+    if IS_PRODUCTION:
+        return {
+            "text": "", 
+            "error": "Voice features are running in local-only mode due to cloud server RAM limitations."
+        }
+
+    # 💻 FOR LOCALHOST: Keep your existing working logic
     try:
         import whisper
         with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
             tmp.write(await audio.read())
             tmp_path = tmp.name
-
-        model = whisper.load_model("base")
+        
+        # Using "tiny" locally is faster and lighter than "base"
+        model = whisper.load_model("tiny") 
         result = model.transcribe(tmp_path)
         os.unlink(tmp_path)
-
+        
         return {"text": result["text"].strip()}
+        
     except ImportError:
-        # Try OpenAI Whisper API instead
-        try:
-            from app.config import client
-            contents = await audio.read()
-            # Note: Anthropic doesn't have speech-to-text; use OpenAI Whisper API
-            return {"text": "", "error": "Whisper not installed. Run: pip install openai-whisper"}
-        except Exception as e:
-            return {"text": "", "error": str(e)}
+        return {"text": "", "error": "Whisper not installed locally. Run: pip install openai-whisper"}
     except Exception as e:
         return {"text": "", "error": str(e)}
